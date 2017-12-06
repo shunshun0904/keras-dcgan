@@ -7,7 +7,6 @@ from keras.layers import Reshape
 from keras.layers.core import Activation
 from keras.layers.core import Flatten
 
-
 #https://keras.io/ja/layers/normalization/
 from keras.layers.normalization import BatchNormalization
 
@@ -15,7 +14,9 @@ from keras.layers.normalization import BatchNormalization
 from keras.layers.convolutional import UpSampling2D
 from keras.layers.convolutional import Conv2D, MaxPooling2D
 
+# https://keras.io/ja/optimizers/#sgd
 from keras.optimizers import SGD
+
 from keras.datasets import mnist
 import numpy as np
 from PIL import Image
