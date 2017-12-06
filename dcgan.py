@@ -1,11 +1,20 @@
+# https://keras.io/ja/getting-started/sequential-model-guide/
 from keras.models import Sequential
+
+#https://keras.io/ja/layers/core/
 from keras.layers import Dense
 from keras.layers import Reshape
 from keras.layers.core import Activation
+from keras.layers.core import Flatten
+
+
+#https://keras.io/ja/layers/normalization/
 from keras.layers.normalization import BatchNormalization
+
+#https://keras.io/ja/layers/convolutional/
 from keras.layers.convolutional import UpSampling2D
 from keras.layers.convolutional import Conv2D, MaxPooling2D
-from keras.layers.core import Flatten
+
 from keras.optimizers import SGD
 from keras.datasets import mnist
 import numpy as np
