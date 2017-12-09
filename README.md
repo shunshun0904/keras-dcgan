@@ -184,8 +184,8 @@ http://tech.uribou.tokyo/python-argparsenoshi-ifang/
 - 元になった論文 Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks リンク
 要点をまとめると下記のようになる
 - プーリング層を全て下記で置き換える
-D(鑑別器): 畳み込み層（strided convolutions）(これはいわゆる普通の畳み込み層のことらしい)
-G(生成器): 分数的にストライドする畳み込み層 (fractional-strieded convolutions)(これはすなわちdeconvolution a.k.a. transposed convolutionsのことらしい...)
+    - D(鑑別器): 畳み込み層（strided convolutions）(これはいわゆる普通の畳み込み層のことらしい)
+    - G(生成器): 分数的にストライドする畳み込み層 (fractional-strieded convolutions)(これはすなわちdeconvolution a.k.a. transposed convolutionsのことらしい...)
 - バッチノルムを使用する（重要らしい）
 - 深い構成では全結合層を除去する
 - 生成器ではReLUを出力層以外の全ての層で活性化関数として使用し、出力層ではtanhを使用する
