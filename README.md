@@ -1,1 +1,294 @@
-## KERAS-DCGANImplementation of http://arxiv.org/abs/1511.06434 with the (awesome) [keras](https://github.com/fchollet/keras) library, for generating artificial images with deep learning.This trains two adversarial deep learning models on real images, in order to produce artificial images that look real.The generator model tries to produce images that look real and get a high score from the discriminator.The discriminator model tries to tell apart between real images and artificial images from the generator.---This assumes theano ordering.You can still use this with tensorflow, by setting "image_dim_ordering": "th" in ~/.keras/keras.json (although this will be slower).---## Usage**Training:** `python dcgan.py --mode train --batch_size <batch_size>`ex`python dcgan.py --mode train --path ~/images --batch_size 128`**Image generation:**`python dcgan.py --mode generate --batch_size <batch_size>``python dcgan.py --mode generate --batch_size <batch_size> --nice` : top 5% images according to discriminatorpython dcgan.py --mode generate --batch_size 128---## Result**generated images :**![generated_image.png](./assets/generated_image.png)![nice_generated_image.png](./assets/nice_generated_image.png)**train process :**![training_process.gif](./assets/training_process.gif)---## 事前知識※DIC受講生の場合、Keras入門を参照### keras`keras document`https://keras.io/ja/## import`Dence`https://keras.io/ja/layers/core/通常の全結合ニューラルネットワークレイヤー```pymodel = Sequential()model.add(Dense(32, input_shape=(784,)))````Reshape`https://keras.io/ja/layers/core/>あるshapeに出力を変形する．```py# as first layer in a Sequential modelmodel = Sequential()model.add(Reshape((3, 4), input_shape=(12,)))# now: model.output_shape == (None, 3, 4)# note: `None` is the batch dimension# as intermediate layer in a Sequential modelmodel.add(Reshape((6, 2)))# now: model.output_shape == (None, 6, 2)# also supports shape inference using `-1` as dimensionmodel.add(Reshape((-1, 2, 2)))# now: model.output_shape == (Non````Activation````引数activation： 使用する活性化関数名 (activationsを参照)， もしくは，TheanoかTensorFlowオペレーション．````Flatten`https://keras.io/ja/layers/core/#flatten```keras.layers.core.Flatten()入力を平滑化する．バッチサイズに影響されない．``````pymodel = Sequential()model.add(Conv2D(64, (3, 3), input_shape=(3, 32, 32)))# now: model.output_shape == (None, 64, 32, 32)model.add(Flatten())# now: model.output_shape == (None, 65536)````BatchNormalization`[from: Batch normalization layer (Ioffe and Szegedy, 2014)](https://arxiv.org/abs/1502.03167)各バッチ毎に前の層の出力（このレイヤーへの入力）を正規化します． つまり，平均を0，標準偏差値を1に近づける変換を適用します．https://keras.io/ja/layers/normalization/`UpSampling2D`https://keras.io/ja/layers/convolutional/#upsampling2d```データの行と列をそれぞれsize[0]及びsize[1]回繰り返します．```![](https://zo7.github.io/img/2016-09-25-generating-faces/deconv.png)>https://zo7.github.io/blog/2016/09/25/generating-faces.html`Conv2D`https://keras.io/ja/layers/convolutional/#conv2d```2次元入力をフィルターする畳み込み層．use_biasをTrueにすると，バイアスベクトルが出力に加えられます．activationがNoneでない場合，指定した活性化関数が出力に適用されます．このレイヤーをモデルの第1層に使うときはキーワード引数input_shape （整数のタプル，サンプル軸を含まない）を指定してください． 例えば，data_format="channels_last"のとき，128x128 RGB画像ではinput_shape=(128, 128, 3)となります．````MaxPooling2D`空間データのマックスプーリング演算．https://keras.io/ja/layers/pooling/#maxpooling2d`SGD` https://keras.io/ja/optimizers/#sgd```モーメンタム，学習率減衰，Nesterov momentumをサポートした確率的勾配降下法．```## generator_model![](https://elix-tech.github.io/images/2017/gan/dcgan_generator.png)[Radford et al. (2015)](https://arxiv.org/abs/1511.06434)より引用## 畳み込みアニメーション`from`https://github.com/vdumoulin/conv_arithmetic#convolution-animations<table style="width:100%">  <tr>    <td><img src="gif/no_padding_no_strides.gif"></td>    <td><img src="gif/arbitrary_padding_no_strides.gif"></td>    <td><img src="gif/same_padding_no_strides.gif"></td>    <td><img src="gif/full_padding_no_strides.gif"></td>  </tr>  <tr>    <td>No padding, no strides</td>    <td>Arbitrary padding, no strides</td>    <td>Half padding, no strides</td>    <td>Full padding, no strides</td>  </tr>  <tr>    <td><img src="gif/no_padding_no_strides_transposed.gif"></td>    <td><img src="gif/arbitrary_padding_no_strides_transposed.gif"></td>    <td><img src="gif/same_padding_no_strides_transposed.gif"></td>    <td><img src="gif/full_padding_no_strides_transposed.gif"></td>  </tr>  <tr>    <td>No padding, no strides, transposed</td>    <td>Arbitrary padding, no strides, transposed</td>    <td>Half padding, no strides, transposed</td>    <td>Full padding, no strides, transposed</td>  </tr>  <tr>    <td><img src="gif/no_padding_strides.gif"></td>    <td><img src="gif/padding_strides.gif"></td>    <td><img src="gif/padding_strides_odd.gif"></td>    <td></td>  </tr>  <tr>    <td>No padding, strides</td>    <td>Padding, strides</td>    <td>Padding, strides (odd)</td>    <td></td>  </tr>  <tr>    <td><img src="gif/no_padding_strides_transposed.gif"></td>    <td><img src="gif/padding_strides_transposed.gif"></td>    <td><img src="gif/padding_strides_odd_transposed.gif"></td>    <td></td>  </tr>  <tr>    <td>No padding, strides, transposed</td>    <td>Padding, strides, transposed</td>    <td>Padding, strides, transposed (odd)</td>    <td></td>  </tr>  <tr>    <td><img src="gif/dilation.gif"></td>    <td></td>    <td></td>    <td></td>  </tr>  <tr>    <td>No padding, no stride, dilation</td>    <td></td>    <td></td>    <td></td>  </tr></table>
+## KERAS-DCGAN
+
+Implementation of http://arxiv.org/abs/1511.06434 with the (awesome) [keras](https://github.com/fchollet/keras) library, for generating artificial images with deep learning.
+
+This trains two adversarial deep learning models on real images, in order to produce artificial images that look real.
+
+The generator model tries to produce images that look real and get a high score from the discriminator.
+
+The discriminator model tries to tell apart between real images and artificial images from the generator.
+
+---
+
+This assumes theano ordering.
+You can still use this with tensorflow, by setting "image_dim_ordering": "th" in ~/.keras/keras.json (although this will be slower).
+
+---
+
+## Usage
+
+**Training:**
+
+ `python dcgan.py --mode train --batch_size <batch_size>`
+
+ex
+
+`python dcgan.py --mode train --path ~/images --batch_size 128`
+
+**Image generation:**
+
+`python dcgan.py --mode generate --batch_size <batch_size>`
+
+`python dcgan.py --mode generate --batch_size <batch_size> --nice` : top 5% images according to discriminator
+
+python dcgan.py --mode generate --batch_size 128
+
+---
+
+## Result
+
+**generated images :**
+
+![generated_image.png](./assets/generated_image.png)
+
+![nice_generated_image.png](./assets/nice_generated_image.png)
+
+**train process :**
+
+![training_process.gif](./assets/training_process.gif)
+
+---
+
+## 事前知識
+
+※DIC受講生の場合、Keras入門を参照
+
+### keras
+
+`keras document`
+https://keras.io/ja/
+
+## import
+
+`Dence`
+
+https://keras.io/ja/layers/core/
+
+通常の全結合ニューラルネットワークレイヤー
+
+```py
+model = Sequential()
+model.add(Dense(32, input_shape=(784,)))
+```
+
+`Reshape`
+
+https://keras.io/ja/layers/core/
+
+>あるshapeに出力を変形する．
+
+```py
+# as first layer in a Sequential model
+model = Sequential()
+model.add(Reshape((3, 4), input_shape=(12,)))
+# now: model.output_shape == (None, 3, 4)
+# note: `None` is the batch dimension
+
+# as intermediate layer in a Sequential model
+model.add(Reshape((6, 2)))
+# now: model.output_shape == (None, 6, 2)
+
+# also supports shape inference using `-1` as dimension
+model.add(Reshape((-1, 2, 2)))
+# now: model.output_shape == (Non
+```
+
+`Activation`
+
+```
+引数
+activation： 使用する活性化関数名 (activationsを参照)， もしくは，TheanoかTensorFlowオペレーション．
+```
+
+`Flatten`
+
+https://keras.io/ja/layers/core/#flatten
+
+```
+keras.layers.core.Flatten()
+入力を平滑化する．バッチサイズに影響されない．
+```
+
+```py
+model = Sequential()
+model.add(Conv2D(64, (3, 3), input_shape=(3, 32, 32)))
+# now: model.output_shape == (None, 64, 32, 32)
+
+model.add(Flatten())
+# now: model.output_shape == (None, 65536)
+```
+
+`BatchNormalization`
+
+[from: Batch normalization layer (Ioffe and Szegedy, 2014)](https://arxiv.org/abs/1502.03167)
+
+各バッチ毎に前の層の出力（このレイヤーへの入力）を正規化します． つまり，平均を0，標準偏差値を1に近づける変換を適用します．
+
+https://keras.io/ja/layers/normalization/
+
+`UpSampling2D`
+
+https://keras.io/ja/layers/convolutional/#upsampling2d
+
+```
+データの行と列をそれぞれsize[0]及びsize[1]回繰り返します．
+```
+
+![](https://zo7.github.io/img/2016-09-25-generating-faces/deconv.png)
+
+>https://zo7.github.io/blog/2016/09/25/generating-faces.html
+
+`Conv2D`
+
+https://keras.io/ja/layers/convolutional/#conv2d
+
+```
+2次元入力をフィルターする畳み込み層．
+
+use_biasをTrueにすると，バイアスベクトルが出力に加えられます．activationがNoneでない場合，指定した活性化関数が出力に適用されます．
+
+このレイヤーをモデルの第1層に使うときはキーワード引数input_shape （整数のタプル，サンプル軸を含まない）を指定してください． 例えば，data_format="channels_last"のとき，128x128 RGB画像ではinput_shape=(128, 128, 3)となります．
+```
+
+`MaxPooling2D`
+
+空間データのマックスプーリング演算．
+
+https://keras.io/ja/layers/pooling/#maxpooling2d
+
+`SGD`
+
+ https://keras.io/ja/optimizers/#sgd
+
+```
+モーメンタム，学習率減衰，Nesterov momentumをサポートした確率的勾配降下法．
+```
+`PIL`
+
+https://pillow.readthedocs.io/en/4.3.x/
+
+```
+Python の画像処理ライブラリで、Python Imaging Library (PIL)の fork プロジェクト。非常に高速にチューニングされており、同様なライブラリであるImageMagickよりも常に高速に動作する。getpixel/putpixelは非常に低速なため、画像生成以外の目的使用する場合は他を使用するのがおすすめらしい。
+```
+
+`argparseモジュール`
+http://tech.uribou.tokyo/python-argparsenoshi-ifang/
+
+```
+コマンドラインツールの開発に必要。
+```
+
+## DCGANについて
+- GANは具体的なネットワークの構成に言及していない。（少なくとも論文中では）
+- DCGAN(Deep Convolutional Generative Adversarial Networks) は、GANに対して畳み込みニューラルネットワークを適用して、うまく学習が成立するベストプラクティスについて提案したもの。
+- 元になった論文 Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks リンク
+要点をまとめると下記のようになる
+- プーリング層を全て下記で置き換える
+D(鑑別器): 畳み込み層（strided convolutions）(これはいわゆる普通の畳み込み層のことらしい)
+G(生成器): 分数的にストライドする畳み込み層 (fractional-strieded convolutions)(これはすなわちdeconvolution a.k.a. transposed convolutionsのことらしい...)
+- バッチノルムを使用する（重要らしい）
+- 深い構成では全結合層を除去する
+- 生成器ではReLUを出力層以外の全ての層で活性化関数として使用し、出力層ではtanhを使用する
+- 識別器ではLeakyReLUを全ての層で使用する
+
+## generator_model
+
+![](https://elix-tech.github.io/images/2017/gan/dcgan_generator.png)
+
+[Radford et al. (2015)](https://arxiv.org/abs/1511.06434)より引用
+
+```py
+def generator_model():
+    #kerasのシーケンシャルモデルの定義
+    model = Sequential()
+    #全結合レイヤーを作成
+    model.add(Dense(input_dim=100, output_dim=1024))
+    # 活性化関数の作成
+    model.add(Activation('tanh'))
+    # 
+    model.add(Dense(128*7*7))
+    # バッチ正規化
+    model.add(BatchNormalization())
+    # 活性化関数の作成
+    model.add(Activation('tanh'))
+    
+    model.add(Reshape((7, 7, 128), input_shape=(128*7*7,)))
+    
+    model.add(UpSampling2D(size=(2, 2)))
+    model.add(Conv2D(64, (5, 5), padding='same'))
+    model.add(Activation('tanh'))
+    model.add(UpSampling2D(size=(2, 2)))
+    model.add(Conv2D(1, (5, 5), padding='same'))
+    model.add(Activation('tanh'))
+    return model
+```
+
+## 畳み込みアニメーション
+
+`from`
+https://github.com/vdumoulin/conv_arithmetic#convolution-animations
+
+<table style="width:100%">
+  <tr>
+    <td><img src="gif/no_padding_no_strides.gif"></td>
+    <td><img src="gif/arbitrary_padding_no_strides.gif"></td>
+    <td><img src="gif/same_padding_no_strides.gif"></td>
+    <td><img src="gif/full_padding_no_strides.gif"></td>
+  </tr>
+  <tr>
+    <td>No padding, no strides</td>
+    <td>Arbitrary padding, no strides</td>
+    <td>Half padding, no strides</td>
+    <td>Full padding, no strides</td>
+  </tr>
+  <tr>
+    <td><img src="gif/no_padding_no_strides_transposed.gif"></td>
+    <td><img src="gif/arbitrary_padding_no_strides_transposed.gif"></td>
+    <td><img src="gif/same_padding_no_strides_transposed.gif"></td>
+    <td><img src="gif/full_padding_no_strides_transposed.gif"></td>
+  </tr>
+  <tr>
+    <td>No padding, no strides, transposed</td>
+    <td>Arbitrary padding, no strides, transposed</td>
+    <td>Half padding, no strides, transposed</td>
+    <td>Full padding, no strides, transposed</td>
+  </tr>
+  <tr>
+    <td><img src="gif/no_padding_strides.gif"></td>
+    <td><img src="gif/padding_strides.gif"></td>
+    <td><img src="gif/padding_strides_odd.gif"></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>No padding, strides</td>
+    <td>Padding, strides</td>
+    <td>Padding, strides (odd)</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><img src="gif/no_padding_strides_transposed.gif"></td>
+    <td><img src="gif/padding_strides_transposed.gif"></td>
+    <td><img src="gif/padding_strides_odd_transposed.gif"></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>No padding, strides, transposed</td>
+    <td>Padding, strides, transposed</td>
+    <td>Padding, strides, transposed (odd)</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td><img src="gif/dilation.gif"></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>No padding, no stride, dilation</td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
+
