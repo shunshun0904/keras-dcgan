@@ -235,6 +235,10 @@ http://yusuke-ujitoko.hatenablog.com/entry/2017/05/08/010314　から引用
 > もともとBatchNormalizationを入れていなかった。 何度試しても、異なるノイズをもとに生成しているにも関わらず、同じ一様な画像となってしまうという問題が発生しており、 層がそこそこ深いためか、勾配がうまく伝わっていないと思われたため、 BatchNormalizationを加えて、各層の平均を0に、分散を正規化した。 これにより、異なるノイズからは少なくとも異なる画像が生成されるようになった。
 
 ## discriminator_model
+
+<a href="https://diveintocode.gyazo.com/3a5fa4581e5a5187d0f342cd1babe645"><img src="https://t.gyazo.com/teams/diveintocode/3a5fa4581e5a5187d0f342cd1babe645.png" alt="https://diveintocode.gyazo.com/3a5fa4581e5a5187d0f342cd1babe645" width="1612"/></a>
+> https://towardsdatascience.com/gan-by-example-using-keras-on-tensorflow-backend-1a6d515a60d0 から引用
+
 ```py
 def discriminator_model():
     
