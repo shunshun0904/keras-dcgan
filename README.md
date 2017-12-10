@@ -400,6 +400,28 @@ def generate(BATCH_SIZE, nice=False):
 生成部分の定義。学習時にsave_weightsしてるので、load_weightsする。
 niceはデフォルトで実行するとFalse。niceを指定すると良い推定値の画像がソートされて纏めて保存される。
 
+## 実行時の引数作成
+```py
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", type=str)
+    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--nice", dest="nice", action="store_true")
+    parser.set_defaults(nice=False)
+    args = parser.parse_args()
+    return args
+```    
+
+## ファイルを実行するmain関数
+```py
+if __name__ == "__main__":
+    args = get_args()
+    if args.mode == "train":
+        train(BATCH_SIZE=args.batch_size)
+    elif args.mode == "generate":
+        generate(BATCH_SIZE=args.batch_size, nice=args.nice)
+```        
+
 ## 畳み込みアニメーション
 
 `from`
