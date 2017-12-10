@@ -199,29 +199,201 @@ http://tech.uribou.tokyo/python-argparsenoshi-ifang/
 
 ```py
 def generator_model():
+
     #kerasのシーケンシャルモデルの定義
     model = Sequential()
+   
     #全結合レイヤーを作成
     model.add(Dense(input_dim=100, output_dim=1024))
-    # 活性化関数の作成
     model.add(Activation('tanh'))
-    # 
+   
+ 　　　　　　
     model.add(Dense(128*7*7))
+    
     # バッチ正規化
     model.add(BatchNormalization())
-    # 活性化関数の作成
     model.add(Activation('tanh'))
     
     model.add(Reshape((7, 7, 128), input_shape=(128*7*7,)))
     
-    model.add(UpSampling2D(size=(2, 2)))
-    model.add(Conv2D(64, (5, 5), padding='same'))
+    # アップサンプリング
+    model.add(UpSampling2D(size=(2, 2)))
+    
+    # 畳み込み層
+    model.add(Conv2D(64, (5, 5), padding='same'))
     model.add(Activation('tanh'))
-    model.add(UpSampling2D(size=(2, 2)))
-    model.add(Conv2D(1, (5, 5), padding='same'))
+    
+    # アップサンプリング
+    model.add(UpSampling2D(size=(2, 2)))
+    
+    # 畳み込み層
+    model.add(Conv2D(1, (5, 5), padding='same'))
     model.add(Activation('tanh'))
     return model
 ```
+http://yusuke-ujitoko.hatenablog.com/entry/2017/05/08/010314　から引用
+> もともとBatchNormalizationを入れていなかった。 何度試しても、異なるノイズをもとに生成しているにも関わらず、同じ一様な画像となってしまうという問題が発生しており、 層がそこそこ深いためか、勾配がうまく伝わっていないと思われたため、 BatchNormalizationを加えて、各層の平均を0に、分散を正規化した。 これにより、異なるノイズからは少なくとも異なる画像が生成されるようになった。
+
+## discriminator_model
+```py
+def discriminator_model():
+    
+    # モデルの定義
+    model = Sequential()
+    
+    # 畳み込み層の作成
+    model.add(
+            Conv2D(64, (5, 5),
+            padding='same',
+            input_shape=(28, 28, 1))
+            )
+    model.add(Activation('tanh'))
+    
+    # プーリング層の作成
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    
+    # 畳み込み層の作成
+    model.add(Conv2D(128, (5, 5)))
+    model.add(Activation('tanh'))
+    
+    # プーリング層の作成
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Flatten())
+    
+    # 全結合層の作成
+   　　model.add(Dense(1024))
+    model.add(Activation('tanh'))
+    
+    # 全結合層の作成
+   　　model.add(Dense(1))
+    model.add(Dense(1))
+    model.add(Activation('sigmoid'))
+    return model
+```
+
+## generator_containing_discriminatoring
+```py
+def generator_containing_discriminator(g, d):
+    model = Sequential()
+    model.add(g)
+    d.trainable = False
+    model.add(d)
+    return model
+```    
+ジェネレータとディスクリミネータを繋いだモデル。誤差伝搬時に使う。
+
+KerasでネットワークのWeightを固定させて、別のLayerのみ学習させたい時に、trainableを使用する。これをfreezeという。
+- 以下trainable適用の思考実験.ネット上でも結構議論されているので、使い方が難しそう。trainable→compileの流れ
+https://qiita.com/mokemokechicken/items/937a82cfdc31e9a6ca12
+https://qiita.com/obsproth/items/d7c53580b847fe762da7
+http://www.mathgram.xyz/entry/keras/tips/freeze
+https://qiita.com/t-ae/items/236457c29ba85a7579d5 (compileを学習のたびに切り替える必要があるかどうかの議論)
+
+
+```py
+def combine_images(generated_images):
+    num = generated_images.shape[0]
+    width = int(math.sqrt(num))
+    height = int(math.ceil(float(num)/width))
+    shape = generated_images.shape[1:3]
+    image = np.zeros((height*shape[0], width*shape[1]),
+                     dtype=generated_images.dtype)
+    for index, img in enumerate(generated_images):
+        i = int(index/width)
+        j = index % width
+        image[i*shape[0]:(i+1)*shape[0], j*shape[1]:(j+1)*shape[1]] = \
+            img[:, :, 0]
+    return image
+```    
+出力画像を一つの画像にまとめて保存する関数。
+
+```py
+def train(BATCH_SIZE):  
+    #mnistデータを取得。
+    (X_train, y_train), (X_test, y_test) = mnist.load_data()
+    #画像を正規化してX_trainに入れ直す。
+    X_train = (X_train.astype(np.float32) - 127.5)/127.5
+    X_train = X_train[:, :, :, None]
+    X_test = X_test[:, :, :, None]
+    # X_train = X_train.reshape((X_train.shape, 1) + X_train.shape[1:])
+    d = discriminator_model()
+    g = generator_model()
+    #ジェネレータとディスクリミネータと２つを結合したモデルを定義。
+    d_on_g = generator_containing_discriminator(g, d)
+    #ジェネレータとディスクリミネータと２つを結合したモデル用の最適化関数をSGDで定義。
+    d_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
+    g_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
+    g.compile(loss='binary_crossentropy', optimizer="SGD")
+    d_on_g.compile(loss='binary_crossentropy', optimizer=g_optim)
+    d.trainable = True
+    d.compile(loss='binary_crossentropy', optimizer=d_optim)
+    for epoch in range(100):
+        print("Epoch is", epoch)
+        print("Number of batches", int(X_train.shape[0]/BATCH_SIZE))
+        for index in range(int(X_train.shape[0]/BATCH_SIZE)):
+            # バッチサイズ分のノイズを作成。
+            noise = np.random.uniform(-1, 1, size=(BATCH_SIZE, 100))
+            image_batch = X_train[index*BATCH_SIZE:(index+1)*BATCH_SIZE]
+            # ノイズをジェネレータに入力。
+            generated_images = g.predict(noise, verbose=0)
+            if index % 20 == 0:
+                image = combine_images(generated_images)
+                image = image*127.5+127.5
+                Image.fromarray(image.astype(np.uint8)).save(
+                    str(epoch)+"_"+str(index)+".png")
+            # 元画像と出力した画像を結合してXとする。        
+            X = np.concatenate((image_batch, generated_images))
+            y = [1] * BATCH_SIZE + [0] * BATCH_SIZE
+            #ディスクリミネータにXとyを入力し学習し誤差を出す。
+            d_loss = d.train_on_batch(X, y)
+            print("batch %d d_loss : %f" % (index, d_loss))
+            noise = np.random.uniform(-1, 1, (BATCH_SIZE, 100))
+            d.trainable = False
+            #２つのモデルを結合したモデルの学習をし誤差をだす。
+            g_loss = d_on_g.train_on_batch(noise, [1] * BATCH_SIZE)
+            d.trainable = True
+            print("batch %d g_loss : %f" % (index, g_loss))
+            if index % 10 == 9:
+                g.save_weights('generator', True)
+                d.save_weights('discriminator', True)
+
+```
+
+kerasの使用上、インスタンス化直後はすべてtrainableな状態になるので、compileする必要がある。trainableの更新を反映させるために、compileする
+
+```py
+def generate(BATCH_SIZE, nice=False):
+    g = generator_model()
+    g.compile(loss='binary_crossentropy', optimizer="SGD")
+    g.load_weights('generator')
+    if nice:
+        d = discriminator_model()
+        d.compile(loss='binary_crossentropy', optimizer="SGD")
+        d.load_weights('discriminator')
+        noise = np.random.uniform(-1, 1, (BATCH_SIZE*20, 100))
+        generated_images = g.predict(noise, verbose=1)
+        d_pret = d.predict(generated_images, verbose=1)
+        index = np.arange(0, BATCH_SIZE*20)
+        index.resize((BATCH_SIZE*20, 1))
+        pre_with_index = list(np.append(d_pret, index, axis=1))
+        pre_with_index.sort(key=lambda x: x[0], reverse=True)
+        nice_images = np.zeros((BATCH_SIZE,) + generated_images.shape[1:3], dtype=np.float32)
+        nice_images = nice_images[:, :, :, None]
+        for i in range(BATCH_SIZE):
+            idx = int(pre_with_index[i][1])
+            nice_images[i, :, :, 0] = generated_images[idx, :, :, 0]
+        image = combine_images(nice_images)
+    else:
+        noise = np.random.uniform(-1, 1, (BATCH_SIZE, 100))
+        generated_images = g.predict(noise, verbose=1)
+        image = combine_images(generated_images)
+    image = image*127.5+127.5
+    Image.fromarray(image.astype(np.uint8)).save(
+        "generated_image.png")
+```
+
+生成部分の定義。学習時にsave_weightsしてるので、load_weightsする。
+niceはデフォルトで実行するとFalse。niceを指定すると良い推定値の画像がソートされて纏めて保存される。
 
 ## 畳み込みアニメーション
 
