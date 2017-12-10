@@ -294,6 +294,7 @@ http://www.mathgram.xyz/entry/keras/tips/freeze
 https://qiita.com/t-ae/items/236457c29ba85a7579d5 (compileを学習のたびに切り替える必要があるかどうかの議論)
 
 
+出力画像を一つの画像にまとめて保存する関数。
 ```py
 def combine_images(generated_images):
     num = generated_images.shape[0]
@@ -309,7 +310,7 @@ def combine_images(generated_images):
             img[:, :, 0]
     return image
 ```    
-出力画像を一つの画像にまとめて保存する関数。
+
 
 ```py
 def train(BATCH_SIZE):  
