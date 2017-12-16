@@ -371,20 +371,35 @@ def train(BATCH_SIZE):
 
 kerasの使用上、インスタンス化直後はすべてtrainableな状態になるので、compileする必要がある。trainableの更新を反映させるために、compileする
 
+
+生成部分の定義。学習時にsave_weightsしてるので、load_weightsする。
+niceはデフォルトで実行するとFalse。niceを指定すると良い推定値の画像がソートされて纏めて保存される。
+
 ```py
+# 画像生成部分の定義
 def generate(BATCH_SIZE, nice=False):
     g = generator_model()
-    g.compile(loss='binary_crossentropy', optimizer="SGD")
-    g.load_weights('generator')
+    # インスタンス化直後はtrainableになるので、compile
+    g.compile(loss='binary_crossentropy', optimizer="SGD")
+    # train関数での重みをロード
+    g.load_weights('generator')
     if nice:
         d = discriminator_model()
+        # インスタンス化直後はtrainableになるので、compile
         d.compile(loss='binary_crossentropy', optimizer="SGD")
+        # train関数での重みをロード
         d.load_weights('discriminator')
-        noise = np.random.uniform(-1, 1, (BATCH_SIZE*20, 100))
-        generated_images = g.predict(noise, verbose=1)
-        d_pret = d.predict(generated_images, verbose=1)
-        index = np.arange(0, BATCH_SIZE*20)
-        index.resize((BATCH_SIZE*20, 1))
+        # (バッチサイズ*20,100)のサイズの乱数を生成
+        noise = np.random.uniform(-1, 1, (BATCH_SIZE*20, 100))
+        # 予測モデルにより画像生成
+        generated_images = g.predict(noise, verbose=1)
+        # 生成画像をディスクリミねーたーに判定させる
+        d_pret = d.predict(generated_images, verbose=1)
+        # (0,バッチサイズ*20)のnumpy配列の作成
+        index = np.arange(0, BATCH_SIZE*20)
+        # 上の配列を転置している（行と列を逆にしている）
+        index.resize((BATCH_SIZE*20, 1))
+        # 
         pre_with_index = list(np.append(d_pret, index, axis=1))
         pre_with_index.sort(key=lambda x: x[0], reverse=True)
         nice_images = np.zeros((BATCH_SIZE,) + generated_images.shape[1:3], dtype=np.float32)
@@ -402,8 +417,7 @@ def generate(BATCH_SIZE, nice=False):
         "generated_image.png")
 ```
 
-生成部分の定義。学習時にsave_weightsしてるので、load_weightsする。
-niceはデフォルトで実行するとFalse。niceを指定すると良い推定値の画像がソートされて纏めて保存される。
+
 
 ## 実行時の引数作成
 ```py
