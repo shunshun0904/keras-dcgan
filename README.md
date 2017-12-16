@@ -66,10 +66,6 @@ https://keras.io/ja/layers/core/
 
 通常の全結合ニューラルネットワークレイヤー
 
-```py
-model = Sequential()
-model.add(Dense(32, input_shape=(784,)))
-```
 
 `Reshape`
 
@@ -270,7 +266,6 @@ def discriminator_model():
     
     # 全結合層の作成
    　　model.add(Dense(1))
-    model.add(Dense(1))
     model.add(Activation('sigmoid'))
     return model
 ```
