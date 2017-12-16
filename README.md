@@ -292,16 +292,16 @@ https://qiita.com/t-ae/items/236457c29ba85a7579d5 (compileを学習のたびに�
 出力画像を一つの画像にまとめて保存する関数。
 ```py
 def combine_images(generated_images):
-    num = generated_images.shape[0]
-    width = int(math.sqrt(num))
-    height = int(math.ceil(float(num)/width))
-    shape = generated_images.shape[1:3]
-    image = np.zeros((height*shape[0], width*shape[1]),
+    num = generated_images.shape[0]  # shape[0]はgenerated_imagesの配列のながさ
+    width = int(math.sqrt(num))　　　　　　　　　　　　# 画像を正方形とした場合の一辺のながさ
+   　　height = int(math.ceil(float(num)/width))　　　　　　　　　　　　　　　　　　　　　　　　# ()内の切り上げ
+    shape = generated_images.shape[1:3]　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　　# shape配列のslice
+    image = np.zeros((height*shape[0], width*shape[1]),  
                      dtype=generated_images.dtype)
     for index, img in enumerate(generated_images):
-        i = int(index/width)
+        i = int(index/width)           
         j = index % width
-        image[i*shape[0]:(i+1)*shape[0], j*shape[1]:(j+1)*shape[1]] = \
+        image[i*shape[0]:(i+1)*shape[0], j*shape[1]:(j+1)*shape[1]] = \ 
             img[:, :, 0]
     return image
 ```    
@@ -312,10 +312,9 @@ def train(BATCH_SIZE):
     #mnistデータを取得。
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
     #画像を正規化してX_trainに入れ直す。
-    X_train = (X_train.astype(np.float32) - 127.5)/127.5
-    X_train = X_train[:, :, :, None]
+    X_train = (X_train.astype(np.float32) - 127.5)/127.5　# # RGBのカラービット数で正規化（0〜255）
+    X_train = X_train[:, :, :, None]
     X_test = X_test[:, :, :, None]
-    # X_train = X_train.reshape((X_train.shape, 1) + X_train.shape[1:])
     d = discriminator_model()
     g = generator_model()
     #ジェネレータとディスクリミネータと２つを結合したモデルを定義。
@@ -323,37 +322,48 @@ def train(BATCH_SIZE):
     #ジェネレータとディスクリミネータと２つを結合したモデル用の最適化関数をSGDで定義。
     d_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
     g_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
-    g.compile(loss='binary_crossentropy', optimizer="SGD")
+    # trainable更新後にcompileしないと反映されない
+    g.compile(loss='binary_crossentropy', optimizer="SGD")
     d_on_g.compile(loss='binary_crossentropy', optimizer=g_optim)
     d.trainable = True
+    # trainable更新後にcompileしないと反映されない
     d.compile(loss='binary_crossentropy', optimizer=d_optim)
     for epoch in range(100):
         print("Epoch is", epoch)
         print("Number of batches", int(X_train.shape[0]/BATCH_SIZE))
         for index in range(int(X_train.shape[0]/BATCH_SIZE)):
-            # バッチサイズ分のノイズを作成。
+            # (128,100)のサイズのノイズを作成。
             noise = np.random.uniform(-1, 1, size=(BATCH_SIZE, 100))
+            # ????
             image_batch = X_train[index*BATCH_SIZE:(index+1)*BATCH_SIZE]
             # ノイズをジェネレータに入力。
             generated_images = g.predict(noise, verbose=0)
-            if index % 20 == 0:
-                image = combine_images(generated_images)
-                image = image*127.5+127.5
-                Image.fromarray(image.astype(np.uint8)).save(
+            # なぜ20で割っているのか？
+            if index % 20 == 0:
+                image = combine_images(generated_images)
+                # 正規化を戻している
+                image = image*127.5+127.5
+                # 画像の出力形式の指定
+                Image.fromarray(image.astype(np.uint8)).save(
                     str(epoch)+"_"+str(index)+".png")
             # 元画像と出力した画像を結合してXとする。        
             X = np.concatenate((image_batch, generated_images))
-            y = [1] * BATCH_SIZE + [0] * BATCH_SIZE
+            # バッチサイズ文の（0と1）の配列作成
+            y = [1] * BATCH_SIZE + [0] * BATCH_SIZE
             #ディスクリミネータにXとyを入力し学習し誤差を出す。
             d_loss = d.train_on_batch(X, y)
             print("batch %d d_loss : %f" % (index, d_loss))
-            noise = np.random.uniform(-1, 1, (BATCH_SIZE, 100))
-            d.trainable = False
+            # [-1:1]の範囲で乱数の生成
+            noise = np.random.uniform(-1, 1, (BATCH_SIZE, 100))
+            # 層の重みの更新をしないように設定
+            d.trainable = False
             #２つのモデルを結合したモデルの学習をし誤差をだす。
             g_loss = d_on_g.train_on_batch(noise, [1] * BATCH_SIZE)
-            d.trainable = True
+            # 層の重みを更新する設定
+            d.trainable = True
             print("batch %d g_loss : %f" % (index, g_loss))
-            if index % 10 == 9:
+            # index = 90 の時のみ実行??
+            if index % 10 == 9:
                 g.save_weights('generator', True)
                 d.save_weights('discriminator', True)
 
