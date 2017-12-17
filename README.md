@@ -227,6 +227,9 @@ def generator_model():
     model.add(Activation('tanh'))
     return model
 ```
+
+<a href="https://diveintocode.gyazo.com/d9452c29aaf64ad43c98ff36eba82940"><img src="https://t.gyazo.com/teams/diveintocode/d9452c29aaf64ad43c98ff36eba82940.png" alt="https://diveintocode.gyazo.com/d9452c29aaf64ad43c98ff36eba82940" width="897"/></a>
+
 http://yusuke-ujitoko.hatenablog.com/entry/2017/05/08/010314　から引用
 > もともとBatchNormalizationを入れていなかった。 何度試しても、異なるノイズをもとに生成しているにも関わらず、同じ一様な画像となってしまうという問題が発生しており、 層がそこそこ深いためか、勾配がうまく伝わっていないと思われたため、 BatchNormalizationを加えて、各層の平均を0に、分散を正規化した。 これにより、異なるノイズからは少なくとも異なる画像が生成されるようになった。
 
@@ -399,9 +402,11 @@ def generate(BATCH_SIZE, nice=False):
         index = np.arange(0, BATCH_SIZE*20)
         # 上の配列を転置している（行と列を逆にしている）
         index.resize((BATCH_SIZE*20, 1))
+        # 図を参照
+        pre_with_index = list(np.append(d_pret, index, axis=1))
+        # 図を参照
+        pre_with_index.sort(key=lambda x: x[0], reverse=True)
         # 
-        pre_with_index = list(np.append(d_pret, index, axis=1))
-        pre_with_index.sort(key=lambda x: x[0], reverse=True)
         nice_images = np.zeros((BATCH_SIZE,) + generated_images.shape[1:3], dtype=np.float32)
         nice_images = nice_images[:, :, :, None]
         for i in range(BATCH_SIZE):
