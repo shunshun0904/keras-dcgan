@@ -273,6 +273,8 @@ def discriminator_model():
     return model
 ```
 
+<a href="https://diveintocode.gyazo.com/3426dddfe38c7dca89218bf3287685b0"><img src="https://t.gyazo.com/teams/diveintocode/3426dddfe38c7dca89218bf3287685b0.png" alt="https://diveintocode.gyazo.com/3426dddfe38c7dca89218bf3287685b0" width="803"/></a>
+
 ## generator_containing_discriminatoring
 ```py
 def generator_containing_discriminator(g, d):
@@ -309,7 +311,7 @@ def combine_images(generated_images):
     return image
 ```    
 
-
+判定をし両方とも学習していく（GANモデルの根本的な部分）
 ```py
 def train(BATCH_SIZE):  
     #mnistデータを取得。
