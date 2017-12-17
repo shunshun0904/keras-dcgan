@@ -331,9 +331,9 @@ def train(BATCH_SIZE):
     # 学習器の作成
     d = discriminator_model()
     g = generator_model()
-    #ジェネレータとディスクリミネータと２つを結合したモデルを定義。
+    #　　ジェネレータとディスクリミネータと２つを結合したモデルを定義。
     d_on_g = generator_containing_discriminator(g, d)
-    #ジェネレータとディスクリミネータと２つを結合したモデル用の最適化関数をSGDで定義。
+    #　　ジェネレータとディスクリミネータと２つを結合したモデル用の最適化関数をSGDで定義。
     # Nesterovの加速勾配降下法（モーメンタム法の改良）
    　　d_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
     g_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
@@ -351,8 +351,8 @@ def train(BATCH_SIZE):
         for index in range(int(X_train.shape[0]/BATCH_SIZE)):
             # (128,100)のサイズのノイズを作成。
             noise = np.random.uniform(-1, 1, size=(BATCH_SIZE, 100))
-            # ????
-            image_batch = X_train[index*BATCH_SIZE:(index+1)*BATCH_SIZE]
+            # 図を参照
+            image_batch = X_train[index*BATCH_SIZE:(index+1)*BATCH_SIZE]
             # ノイズをジェネレータに入力。
             generated_images = g.predict(noise, verbose=0)
             # なぜ20で割っているのか？
@@ -368,13 +368,14 @@ def train(BATCH_SIZE):
             # バッチサイズ文の（0と1）の配列作成
             y = [1] * BATCH_SIZE + [0] * BATCH_SIZE
             #ディスクリミネータにXとyを入力し学習し誤差を出す。
-            d_loss = d.train_on_batch(X, y)
+            # train_on_batch()を公式ドキュメントで確認(https://keras.io/ja/models/sequential/)
+            d_loss = d.train_on_batch(X, y)
             print("batch %d d_loss : %f" % (index, d_loss))
             # [-1:1]の範囲で乱数の生成
             noise = np.random.uniform(-1, 1, (BATCH_SIZE, 100))
             # 層の重みの更新をしないように設定
             d.trainable = False
-            #２つのモデルを結合したモデルの学習をし誤差をだす。
+            # 誤差を伝搬させる関数を利用して、モデルの学習をし再度誤差をだす。
             g_loss = d_on_g.train_on_batch(noise, [1] * BATCH_SIZE)
             # 層の重みを更新する設定
             d.trainable = True
@@ -384,6 +385,13 @@ def train(BATCH_SIZE):
                 g.save_weights('generator', True)
                 d.save_weights('discriminator', True)
 ```
+
+<a href="https://diveintocode.gyazo.com/2ffe431cabed35c822accf19a1dc6ba5"><img src="https://t.gyazo.com/teams/diveintocode/2ffe431cabed35c822accf19a1dc6ba5.png" alt="https://diveintocode.gyazo.com/2ffe431cabed35c822accf19a1dc6ba5" width="995"/></a>
+
+
+
+<a href="https://diveintocode.gyazo.com/8196825367a4219f712d1ed35058cd5d"><img src="https://t.gyazo.com/teams/diveintocode/8196825367a4219f712d1ed35058cd5d.png" alt="https://diveintocode.gyazo.com/8196825367a4219f712d1ed35058cd5d" width="712"/></a>
+
 
 kerasの使用上、インスタンス化直後はすべてtrainableな状態になるので、compileする必要がある。trainableの更新を反映させるために、compileする
 
@@ -415,11 +423,9 @@ def generate(BATCH_SIZE, nice=False):
         index = np.arange(0, BATCH_SIZE*20)
         # 上の配列を転置している（行と列を逆にしている）
         index.resize((BATCH_SIZE*20, 1))
-        # 図を参照
         pre_with_index = list(np.append(d_pret, index, axis=1))
-        # 図を参照
         pre_with_index.sort(key=lambda x: x[0], reverse=True)
-        # 
+ 
         nice_images = np.zeros((BATCH_SIZE,) + generated_images.shape[1:3], dtype=np.float32)
         nice_images = nice_images[:, :, :, None]
         for i in range(BATCH_SIZE):
