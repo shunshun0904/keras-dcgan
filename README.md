@@ -174,6 +174,9 @@ http://tech.uribou.tokyo/python-argparsenoshi-ifang/
 コマンドラインツールの開発に必要。
 ```
 
+### MNISTの公式ドキュメント(データの形式等、確認)
+[https://keras.io/ja/datasets/](https://keras.io/ja/datasets/)
+
 ## DCGANについて
 - GANは具体的なネットワークの構成に言及していない。（少なくとも論文中では）
 - DCGAN(Deep Convolutional Generative Adversarial Networks) は、GANに対して畳み込みニューラルネットワークを適用して、うまく学習が成立するベストプラクティスについて提案したもの。
@@ -273,9 +276,11 @@ def discriminator_model():
     return model
 ```
 
-<a href="https://diveintocode.gyazo.com/3426dddfe38c7dca89218bf3287685b0"><img src="https://t.gyazo.com/teams/diveintocode/3426dddfe38c7dca89218bf3287685b0.png" alt="https://diveintocode.gyazo.com/3426dddfe38c7dca89218bf3287685b0" width="803"/></a>
+<a href="https://diveintocode.gyazo.com/b869cd04800ec7e0ccd515419b1bf707"><img src="https://t.gyazo.com/teams/diveintocode/b869cd04800ec7e0ccd515419b1bf707.png" alt="https://diveintocode.gyazo.com/b869cd04800ec7e0ccd515419b1bf707" width="803"/></a>
 
 ## generator_containing_discriminatoring
+
+
 ```py
 def generator_containing_discriminator(g, d):
     model = Sequential()
@@ -309,23 +314,28 @@ def combine_images(generated_images):
         image[i*shape[0]:(i+1)*shape[0], j*shape[1]:(j+1)*shape[1]] = \ 
             img[:, :, 0]
     return image
-```    
+```
 
 判定をし両方とも学習していく（GANモデルの根本的な部分）
+
 ```py
 def train(BATCH_SIZE):  
     #mnistデータを取得。
     (X_train, y_train), (X_test, y_test) = mnist.load_data()
     #画像を正規化してX_trainに入れ直す。
     X_train = (X_train.astype(np.float32) - 127.5)/127.5　# # RGBのカラービット数で正規化（0〜255）
+    ################
     X_train = X_train[:, :, :, None]
     X_test = X_test[:, :, :, None]
-    d = discriminator_model()
+    ################
+    # 学習器の作成
+    d = discriminator_model()
     g = generator_model()
     #ジェネレータとディスクリミネータと２つを結合したモデルを定義。
     d_on_g = generator_containing_discriminator(g, d)
     #ジェネレータとディスクリミネータと２つを結合したモデル用の最適化関数をSGDで定義。
-    d_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
+    # Nesterovの加速勾配降下法（モーメンタム法の改良）
+   　　d_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
     g_optim = SGD(lr=0.0005, momentum=0.9, nesterov=True)
     # trainable更新後にcompileしないと反映されない
     g.compile(loss='binary_crossentropy', optimizer="SGD")
@@ -333,7 +343,9 @@ def train(BATCH_SIZE):
     d.trainable = True
     # trainable更新後にcompileしないと反映されない
     d.compile(loss='binary_crossentropy', optimizer=d_optim)
-    for epoch in range(100):
+    
+    # ここから学習開始
+    for epoch in range(100):
         print("Epoch is", epoch)
         print("Number of batches", int(X_train.shape[0]/BATCH_SIZE))
         for index in range(int(X_train.shape[0]/BATCH_SIZE)):
@@ -371,7 +383,6 @@ def train(BATCH_SIZE):
             if index % 10 == 9:
                 g.save_weights('generator', True)
                 d.save_weights('discriminator', True)
-
 ```
 
 kerasの使用上、インスタンス化直後はすべてtrainableな状態になるので、compileする必要がある。trainableの更新を反映させるために、compileする
