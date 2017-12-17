@@ -349,13 +349,13 @@ def train(BATCH_SIZE):
         print("Epoch is", epoch)
         print("Number of batches", int(X_train.shape[0]/BATCH_SIZE))
         for index in range(int(X_train.shape[0]/BATCH_SIZE)):
-            # (128,100)のサイズのノイズを作成。
-            noise = np.random.uniform(-1, 1, size=(BATCH_SIZE, 100))
+            # (128,100)のサイズのノイズを作成。各バッチの初回に必要。
+            noise = np.random.uniform(-1, 1, size=(BATCH_SIZE, 100))
             # 図を参照
             image_batch = X_train[index*BATCH_SIZE:(index+1)*BATCH_SIZE]
             # ノイズをジェネレータに入力。
             generated_images = g.predict(noise, verbose=0)
-            # なぜ20で割っているのか？
+            # 20の倍数のみif内の処理
             if index % 20 == 0:
                 image = combine_images(generated_images)
                 # 正規化を戻している
@@ -371,7 +371,7 @@ def train(BATCH_SIZE):
             # train_on_batch()を公式ドキュメントで確認(https://keras.io/ja/models/sequential/)
             d_loss = d.train_on_batch(X, y)
             print("batch %d d_loss : %f" % (index, d_loss))
-            # [-1:1]の範囲で乱数の生成
+            # [-1:1]の範囲で乱数の生成（誤差を含めた分も学習させるため）
             noise = np.random.uniform(-1, 1, (BATCH_SIZE, 100))
             # 層の重みの更新をしないように設定
             d.trainable = False
@@ -380,7 +380,7 @@ def train(BATCH_SIZE):
             # 層の重みを更新する設定
             d.trainable = True
             print("batch %d g_loss : %f" % (index, g_loss))
-            # index = 90 の時のみ実行??
+            # 19,29,39... の時のみ実行??(おそらくハイパーパラメータ)
             if index % 10 == 9:
                 g.save_weights('generator', True)
                 d.save_weights('discriminator', True)
